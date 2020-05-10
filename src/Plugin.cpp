@@ -1,0 +1,72 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//                               This file is part of CosmoScout VR                               //
+//      and may be used under the terms of the MIT license. See the LICENSE file for details.     //
+//                        Copyright: (c) 2019 German Aerospace Center (DLR)                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "Plugin.hpp"
+#include "logger.hpp"
+
+#include "../../../src/cs-core/Settings.hpp"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+EXPORT_FN cs::core::PluginBase* create() {
+  return new csp::minimap::Plugin;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+EXPORT_FN void destroy(cs::core::PluginBase* pluginBase) {
+  delete pluginBase;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace csp::minimap {
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void from_json(nlohmann::json const& j, Plugin::Settings& o) {
+}
+
+void to_json(nlohmann::json& j, Plugin::Settings const& o) {
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Plugin::init() {
+
+  logger().info("Loading plugin...");
+
+  // Call onLoad whenever the settings are reloaded.
+  mOnLoadConnection = mAllSettings->onLoad().connect([this]() { onLoad(); });
+
+  // Store the current settings on save.
+  mOnSaveConnection = mAllSettings->onSave().connect(
+      [this]() { mAllSettings->mPlugins["csp-minmap"] = mPluginSettings; });
+
+  // Load initial settings.
+  onLoad();
+
+  logger().info("Loading done.");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Plugin::deInit() {
+  mAllSettings->onLoad().disconnect(mOnLoadConnection);
+  mAllSettings->onSave().disconnect(mOnSaveConnection);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Plugin::onLoad() {
+
+  // Read settings from JSON.
+  from_json(mAllSettings->mPlugins.at("csp-minmap"), mPluginSettings);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+} // namespace csp::minimap
