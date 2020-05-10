@@ -7,6 +7,7 @@
 #include "Plugin.hpp"
 #include "logger.hpp"
 
+#include "../../../src/cs-core/GuiManager.hpp"
 #include "../../../src/cs-core/Settings.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,7 +45,22 @@ void Plugin::init() {
 
   // Store the current settings on save.
   mOnSaveConnection = mAllSettings->onSave().connect(
-      [this]() { mAllSettings->mPlugins["csp-minmap"] = mPluginSettings; });
+      [this]() { mAllSettings->mPlugins["csp-minimap"] = mPluginSettings; });
+
+  // Add resources to gui.
+  mGuiManager->addCssToGui("css/csp-minimap.css");
+  mGuiManager->addHtmlToGui("minimap-template", "../share/resources/gui/csp-minimap-template.html");
+  mGuiManager->addScriptToGuiFromJS("../share/resources/gui/js/csp-minimap.js");
+
+  // Register a callback to toggle the minimap.
+  std::string callback = "minimap.toggle";
+  mGuiManager->getGui()->registerCallback(callback, "Toggles the Minimap.", std::function([this]() {
+    mGuiManager->getGui()->executeJavascript(
+        "document.querySelector('#minimap').classList.toggle('visible')");
+  }));
+
+  // Add a timeline button to toggle the minimap.
+  mGuiManager->addTimelineButton("Toggle Minimap", "map", callback);
 
   // Load initial settings.
   onLoad();
@@ -57,6 +73,13 @@ void Plugin::init() {
 void Plugin::deInit() {
   mAllSettings->onLoad().disconnect(mOnLoadConnection);
   mAllSettings->onSave().disconnect(mOnSaveConnection);
+
+  mGuiManager->getGui()->callJavascript("CosmoScout.gui.unregisterHtml", "minimap-template");
+  mGuiManager->getGui()->callJavascript("CosmoScout.gui.unregisterCss", "css/csp-minimap.css");
+  mGuiManager->getGui()->executeJavascript("document.querySelector('#minimap').remove()");
+
+  mGuiManager->removeTimelineButton("Toggle Minimap");
+  mGuiManager->getGui()->unregisterCallback("minimap.toggle");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +87,7 @@ void Plugin::deInit() {
 void Plugin::onLoad() {
 
   // Read settings from JSON.
-  from_json(mAllSettings->mPlugins.at("csp-minmap"), mPluginSettings);
+  from_json(mAllSettings->mPlugins.at("csp-minimap"), mPluginSettings);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

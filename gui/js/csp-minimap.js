@@ -10,6 +10,11 @@
      * @type {string}
      */
     name = 'minimap';
+
+    init() {
+      let minimap = CosmoScout.gui.loadTemplateContent('minimap');
+      document.getElementById('cosmoscout').appendChild(minimap);
+    }
   }
 
   CosmoScout.init(MinimapApi);
