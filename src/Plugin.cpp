@@ -48,6 +48,9 @@ void Plugin::init() {
       [this]() { mAllSettings->mPlugins["csp-minimap"] = mPluginSettings; });
 
   // Add resources to gui.
+  mGuiManager->addScriptToGuiFromJS("../share/resources/gui/third-party/js/leaflet.js");
+  mGuiManager->addCssToGui("third-party/css/leaflet.css");
+
   mGuiManager->addCssToGui("css/csp-minimap.css");
   mGuiManager->addHtmlToGui("minimap-template", "../share/resources/gui/csp-minimap-template.html");
   mGuiManager->addScriptToGuiFromJS("../share/resources/gui/js/csp-minimap.js");
