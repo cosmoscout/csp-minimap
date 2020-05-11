@@ -9,11 +9,22 @@
 
 #include "../../../src/cs-core/PluginBase.hpp"
 
+#include <map>
+#include <vector>
+
 namespace csp::minimap {
 
 class Plugin : public cs::core::PluginBase {
  public:
-  struct Settings {};
+  struct Settings {
+    struct Layer {
+      std::string                mURL;
+      std::optional<std::string> mLayer;
+      std::optional<std::string> mAttribution;
+    };
+
+    std::map<std::string, std::vector<Layer>> mTargets;
+  };
 
   void init() override;
   void deInit() override;

@@ -28,10 +28,26 @@ namespace csp::minimap {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void from_json(nlohmann::json const& j, Plugin::Settings::Layer& o) {
+  cs::core::Settings::deserialize(j, "url", o.mURL);
+  cs::core::Settings::deserialize(j, "layer", o.mLayer);
+  cs::core::Settings::deserialize(j, "attribution", o.mAttribution);
+}
+
+void to_json(nlohmann::json& j, Plugin::Settings::Layer const& o) {
+  cs::core::Settings::serialize(j, "url", o.mURL);
+  cs::core::Settings::serialize(j, "layer", o.mLayer);
+  cs::core::Settings::serialize(j, "attribution", o.mAttribution);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void from_json(nlohmann::json const& j, Plugin::Settings& o) {
+  cs::core::Settings::deserialize(j, "targets", o.mTargets);
 }
 
 void to_json(nlohmann::json& j, Plugin::Settings const& o) {
+  cs::core::Settings::serialize(j, "targets", o.mTargets);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
