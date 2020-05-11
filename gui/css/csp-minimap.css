@@ -1,4 +1,37 @@
 #minimap {
-  height: 200px;
-  width: 200px;
+  height: 300px;
+  width: 300px;
+}
+
+.leaflet-bar {
+  background-color: rgba(20, 20, 20, 0.8);
+  border: 2px solid var(--cs-text-color-darkened);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+}
+
+.leaflet-bar i {
+  pointer-events: none;
+}
+
+.leaflet-bar a.leaflet-disabled,
+.leaflet-bar a {
+  position: relative;
+  color: var(--cs-text-color);
+  border-radius: 0;
+  background-color: rgba(230, 230, 255, 0.1);
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.leaflet-bar a:not(.leaflet-disabled):hover {
+  color: #fff;
+  background-color: rgba(230, 230, 255, 0.3);
+}
+
+.leaflet-bar a:not(.leaflet-disabled):active {
+  top: 1px;
+}
+
+.leaflet-bar a.leaflet-disabled {
+  color: rgb(121, 121, 121);
 }
