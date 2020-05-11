@@ -8,6 +8,8 @@
 #define CSP_MINIMAP_PLUGIN_HPP
 
 #include "../../../src/cs-core/PluginBase.hpp"
+#include "../../../src/cs-core/Settings.hpp"
+#include "../../../src/cs-scene/CelestialBody.hpp"
 
 #include <map>
 #include <vector>
@@ -30,12 +32,17 @@ class Plugin : public cs::core::PluginBase {
   void deInit() override;
 
  private:
+  void onAddBookmark(std::shared_ptr<cs::scene::CelestialBody> const& activeBody,
+      uint32_t bookmarkID, cs::core::Settings::Bookmark const& bookmark);
   void onLoad();
 
   Settings mPluginSettings;
 
-  int mOnLoadConnection = -1;
-  int mOnSaveConnection = -1;
+  int mActiveBodyConnection        = -1;
+  int mOnBookmarkAddedConnection   = -1;
+  int mOnBookmarkRemovedConnection = -1;
+  int mOnLoadConnection            = -1;
+  int mOnSaveConnection            = -1;
 };
 
 } // namespace csp::minimap

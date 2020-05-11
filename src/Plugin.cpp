@@ -8,7 +8,8 @@
 #include "logger.hpp"
 
 #include "../../../src/cs-core/GuiManager.hpp"
-#include "../../../src/cs-core/Settings.hpp"
+#include "../../../src/cs-core/SolarSystem.hpp"
+#include "../../../src/cs-utils/convert.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -81,6 +82,31 @@ void Plugin::init() {
   // Add a timeline button to toggle the minimap.
   mGuiManager->addTimelineButton("Toggle Minimap", "map", callback);
 
+  // Add newly created bookmarks.
+  mOnBookmarkAddedConnection = mGuiManager->onBookmarkAdded().connect(
+      [this](uint32_t bookmarkID, cs::core::Settings::Bookmark const& bookmark) {
+        onAddBookmark(mSolarSystem->pActiveBody.get(), bookmarkID, bookmark);
+      });
+
+  // Remove deleted bookmarks.
+  mOnBookmarkRemovedConnection = mGuiManager->onBookmarkRemoved().connect(
+      [this](uint32_t bookmarkID, cs::core::Settings::Bookmark const& /*bookmark*/) {
+        mGuiManager->getGui()->callJavascript("CosmoScout.minimap.removeBookmark", bookmarkID);
+      });
+
+  // Update bookmarks if active body changes.
+  mActiveBodyConnection = mSolarSystem->pActiveBody.connectAndTouch(
+      [this](std::shared_ptr<cs::scene::CelestialBody> const& body) {
+        mGuiManager->getGui()->callJavascript("CosmoScout.minimap.removeBookmarks");
+
+        // Add all bookmarks with positions for this body.
+        if (body) {
+          for (auto const& [id, bookmark] : mGuiManager->getBookmarks()) {
+            onAddBookmark(body, id, bookmark);
+          }
+        }
+      });
+
   // Load initial settings.
   onLoad();
 
@@ -90,8 +116,13 @@ void Plugin::init() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::deInit() {
+  logger().info("Unloading plugin...");
+
   mAllSettings->onLoad().disconnect(mOnLoadConnection);
   mAllSettings->onSave().disconnect(mOnSaveConnection);
+
+  mGuiManager->onBookmarkAdded().disconnect(mOnBookmarkAddedConnection);
+  mGuiManager->onBookmarkRemoved().disconnect(mOnBookmarkRemovedConnection);
 
   mGuiManager->getGui()->callJavascript("CosmoScout.gui.unregisterHtml", "minimap-template");
   mGuiManager->getGui()->callJavascript("CosmoScout.gui.unregisterCss", "css/csp-minimap.css");
@@ -99,6 +130,29 @@ void Plugin::deInit() {
 
   mGuiManager->removeTimelineButton("Toggle Minimap");
   mGuiManager->getGui()->unregisterCallback("minimap.toggle");
+
+  mSolarSystem->pActiveBody.disconnect(mActiveBodyConnection);
+
+  logger().info("Unloading done.");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Plugin::onAddBookmark(std::shared_ptr<cs::scene::CelestialBody> const& activeBody,
+    uint32_t bookmarkID, cs::core::Settings::Bookmark const& bookmark) {
+
+  if (bookmark.mLocation && bookmark.mLocation.value().mPosition) {
+    if (activeBody->getCenterName() == bookmark.mLocation.value().mCenter) {
+      auto radii = activeBody->getRadii();
+      auto p     = cs::utils::convert::toLngLatHeight(
+          bookmark.mLocation.value().mPosition.value(), radii[0], radii[0])
+                   .xy();
+      p      = cs::utils::convert::toDegrees(p);
+      auto c = bookmark.mColor.value_or(glm::vec3(0.8F, 0.8F, 1.0F)) * 255.F;
+      mGuiManager->getGui()->callJavascript("CosmoScout.minimap.addBookmark", bookmarkID,
+          bookmark.mName, fmt::format("rgb({}, {}, {})", c.r, c.g, c.b), p.x, p.y);
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

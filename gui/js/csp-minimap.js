@@ -11,6 +11,8 @@
      */
     name = 'minimap';
 
+    _bookmarks = {};
+
     _lastLng = 0;
     _lastLat = 0;
     _locked  = true;
@@ -119,8 +121,19 @@
       L.control.attribution({position: 'bottomleft'}).addTo(this._minimap);
 
       // Create a marker for the user's position.
+      let crossHair = L.icon({
+        iconUrl: 'img/observer.png',
+        shadowUrl: 'img/observer_shadow.png',
+        iconSize: [28, 28],
+        shadowSize: [28, 28],
+        iconAnchor: [14, 14],
+        shadowAnchor: [14, 14],
+        popupAnchor: [14, 30]
+      });
+
       this._observerMarker =
-          L.circleMarker([0, 0], {radius: 5, weight: 2, color: "red", fill: false})
+          L.marker(
+               [0, 0], {icon: crossHair, interactive: false, keyboard: false, zIndexOffset: 1000})
               .addTo(this._minimap);
 
       this._wmslayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -135,7 +148,7 @@
         let height = this._zoomToHeight(this._minimap.getZoom());
 
         if (center !== "") {
-          CosmoScout.callbacks.navigation.setBodyLongLatHeightDuration(center, lng, lat, height, 5);
+          CosmoScout.callbacks.navigation.setBodyLongLatHeightDuration(center, lng, lat, height, 2);
         }
       });
 
@@ -160,6 +173,30 @@
       if (this._minimapDiv.classList.contains("visible")) {
         this._centerMapOnObserver(false);
       }
+    }
+
+    addBookmark(bookmarkID, bookmarkName, bookmarkColor, lng, lat) {
+      this._bookmarks[bookmarkID] = L.marker([lat, lng], {
+                                       icon: L.divIcon({
+                                         className: 'minimap-bookmark-icon',
+                                         html: `<div style="border-color: ${bookmarkColor}"></div>`
+                                       })
+                                     }).addTo(this._minimap);
+    }
+
+    removeBookmark(bookmarkID) {
+      if (bookmarkID in this._bookmarks) {
+        this._bookmarks[bookmarkID].removeFrom(this._minimap);
+        delete this._bookmarks[bookmarkID];
+      }
+    }
+
+    removeBookmarks() {
+      for (let i in this._bookmarks) {
+        this._bookmarks[i].removeFrom(this._minimap);
+      }
+
+      this._bookmarks = {};
     }
 
     // These are quite a crude conversions from the minimap zoom level to observer height. It
@@ -187,9 +224,10 @@
 
           if (force || this._locked) {
             this._minimap.setView([lat, lng], [this._minimap.getZoom()]);
-            this._lastLng = lng;
-            this._lastLat = lat;
           }
+
+          this._lastLng = lng;
+          this._lastLat = lat;
         }
       }
     }
