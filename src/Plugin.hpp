@@ -19,13 +19,24 @@ namespace csp::minimap {
 class Plugin : public cs::core::PluginBase {
  public:
   struct Settings {
-    struct Layer {
-      std::string                mURL;
-      std::optional<std::string> mLayer;
-      std::optional<std::string> mAttribution;
+    enum class ProjectionType { eNone, eMercator, eEquirectangular };
+    enum class LayerType { eNone, eWMS, eWMTS };
+
+    struct Map {
+      ProjectionType mProjection;
+      LayerType      mType;
+      std::string    mURL;
+
+      /// This is directly passed to Leaflet, the supported options are documented on the page
+      /// linked below. Note that if mType is eWMS all additional options will be sent to the WMS
+      /// server as extra parameters in each request URL.
+      /// https://leafletjs.com/reference-1.6.0.html#tilelayer
+      /// https://leafletjs.com/reference-1.6.0.html#tilelayer-wms
+      nlohmann::json mConfig;
     };
 
-    std::map<std::string, std::vector<Layer>> mTargets;
+    std::map<std::string, Map> mMaps;
+    std::optional<Map> mDefaultMap;
   };
 
   void init() override;

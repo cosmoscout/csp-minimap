@@ -42,6 +42,10 @@
 
 /* Leaflet style overrides */
 
+.leaflet-container {
+  background: none;
+}
+
 .leaflet-container .leaflet-control-container>div {
   opacity: 0;
   pointer-events: none;

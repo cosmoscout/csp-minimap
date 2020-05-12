@@ -12,13 +12,14 @@
     name = 'minimap';
 
     _bookmarks = {};
+    _baselayer = null;
 
     _lastLng = 0;
     _lastLat = 0;
     _locked  = true;
 
     _customControls = L.Control.extend({
-      options: {position: 'topright'},
+      options: {position: 'topleft'},
       onAdd:
           () => {
             let createButton = (icon, tooltip, callback) => {
@@ -28,8 +29,6 @@
               button.dataset.toggle    = 'tooltip';
               button.dataset.placement = 'left';
               L.DomEvent.on(button, 'click', callback);
-
-              // Don't let mouse events get to the map.
               L.DomEvent.on(button, 'dblclick', L.DomEvent.stop);
               L.DomEvent.on(button, 'mousedown', L.DomEvent.stop);
               L.DomEvent.on(button, 'mouseup', L.DomEvent.stop);
@@ -38,17 +37,17 @@
             };
 
             let zoomInButton = createButton('add', 'Zoom in', (e) => {
-              this._minimap.zoomIn();
+              this._map.zoomIn();
               L.DomEvent.stop(e);
             });
 
             let zoomOutButton = createButton('remove', 'Zoom out', (e) => {
-              this._minimap.zoomOut();
+              this._map.zoomOut();
               L.DomEvent.stop(e);
             });
 
             let zoomResetButton = createButton('zoom_out_map', 'Fit map', (e) => {
-              this._minimap.setView([0, 0], 0);
+              this._map.setView([0, 0], 0);
               L.DomEvent.stop(e);
             });
 
@@ -101,17 +100,18 @@
 
     init() {
       // Add the minimap window.
-      this._minimapDiv = CosmoScout.gui.loadTemplateContent('minimap');
-      document.getElementById('cosmoscout').appendChild(this._minimapDiv);
+      this._mapDiv = CosmoScout.gui.loadTemplateContent('minimap');
+      document.getElementById('cosmoscout').appendChild(this._mapDiv);
 
       // Create the Leaflet map.
-      this._minimap = L.map(document.querySelector('#minimap .window-content'), {
+      this._map = L.map(document.querySelector('#minimap .window-content'), {
         attributionControl: false,
         zoomControl: false,
         center: [0, 0],
         zoom: 0,
         worldCopyJump: true,
-        maxBounds: [[-90, -180], [90, 180]]
+        maxBounds: [[-90, -180], [90, 180]],
+        crs: L.CRS.EPSG4326
       });
 
       // Bookmarks will be shown in this cluster layer.
@@ -132,10 +132,10 @@
       });
 
       // Add our custom buttons.
-      this._minimap.addControl(new this._customControls());
+      this._map.addControl(new this._customControls());
 
       // Add the attribution control to the bottom left.
-      L.control.attribution({position: 'bottomleft'}).addTo(this._minimap);
+      L.control.attribution({position: 'bottomleft'}).addTo(this._map);
 
       // Create a marker for the user's position.
       let crossHair = L.icon({
@@ -148,19 +148,16 @@
       });
 
       this._observerMarker =
-          L.marker([0, 0], {icon: crossHair, interactive: false, keyboard: false, zIndexOffset: -1})
-              .addTo(this._minimap);
-
-      this._wmslayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                          attribution: '&copy; OpenStreetMap contributors'
-                        }).addTo(this._minimap);
+          L.marker(
+               [0, 0], {icon: crossHair, interactive: false, keyboard: false, zIndexOffset: -100})
+              .addTo(this._map);
 
       // Move the observer when clicked on the minimap.
-      this._minimap.on('click', (e) => {
+      this._map.on('click', (e) => {
         let lng    = parseFloat(e.latlng.lng);
         let lat    = parseFloat(e.latlng.lat);
         let center = CosmoScout.state.activePlanetCenter;
-        let height = this._zoomToHeight(this._minimap.getZoom());
+        let height = this._zoomToHeight(this._map.getZoom());
 
         if (center !== "") {
           CosmoScout.callbacks.navigation.setBodyLongLatHeightDuration(center, lng, lat, height, 2);
@@ -175,19 +172,54 @@
           if (!Array.isArray(entries) || !entries.length) {
             return;
           }
-          this._minimap.invalidateSize();
+          this._map.invalidateSize();
         });
       });
 
-      this._resizeObserver.observe(this._minimapDiv);
+      this._resizeObserver.observe(this._mapDiv);
     }
 
     // Update minimap based on observer state.
     update() {
-      // Do not do anything if invisible.
-      if (this._minimapDiv.classList.contains("visible")) {
+      if (this._mapDiv.classList.contains("visible")) {
         this._centerMapOnObserver(false);
       }
+    }
+
+    configure(settingsJSON) {
+
+      // First remove existing layer.
+      if (this._baselayer) {
+        this._map.removeLayer(this._baselayer);
+      }
+
+      if (settingsJSON == "") {
+
+        // Add empty layer if none is configured.
+        this._baselayer = L.tileLayer('');
+
+      } else {
+
+        let settings = JSON.parse(settingsJSON);
+
+        // Update map projection.
+        if (settings.projection == "mercator") {
+          this._map.options.crs = L.CRS.EPSG3857;
+        } else {
+          this._map.options.crs = L.CRS.EPSG4326;
+        }
+
+        // Create new layer.
+        if (settings.type == "wms") {
+          this._baselayer = L.tileLayer.wms(settings.url, settings.config);
+        } else {
+          this._baselayer = L.tileLayer(settings.url, settings.config);
+        }
+      }
+
+      // Now add the new layer.
+      this._map.addLayer(this._baselayer);
+      this._map.setZoom(2);
     }
 
     addBookmark(bookmarkID, bookmarkColor, lng, lat) {
@@ -202,8 +234,8 @@
            }).addTo(this._bookmarkLayer);
 
       L.DomEvent.on(this._bookmarks[bookmarkID], 'mouseover', () => {
-        let pos = this._minimap.latLngToContainerPoint(this._bookmarks[bookmarkID].getLatLng());
-        let box = this._minimapDiv.getBoundingClientRect();
+        let pos = this._map.latLngToContainerPoint(this._bookmarks[bookmarkID].getLatLng());
+        let box = this._mapDiv.getBoundingClientRect();
         CosmoScout.callbacks.bookmark.showTooltip(
             bookmarkID, box.x + pos.x + 2, box.y + pos.y - 12);
       });
@@ -220,7 +252,7 @@
       // The markerClusterGroup wants to be added to the map AFTER the first marker has been added.
       // So we have to do this here...
       if (!this._bookmarkLayerAdded) {
-        this._minimap.addLayer(this._bookmarkLayer);
+        this._map.addLayer(this._bookmarkLayer);
         this._bookmarkLayerAdded = true;
       }
     }
@@ -243,13 +275,13 @@
     // These are quite a crude conversions from the minimap zoom level to observer height. It
     // works quite well for middle latitudes and the standard field of view.
     _zoomToHeight(zoom) {
-      return 0.01 * this._minimapDiv.clientWidth * CosmoScout.state.activePlanetRadius[0] /
+      return 0.01 * this._mapDiv.clientWidth * CosmoScout.state.activePlanetRadius[0] /
              Math.pow(2, zoom);
     }
 
     _heightToZoom(height) {
-      return Math.log2(0.01 * this._minimapDiv.clientWidth *
-                       CosmoScout.state.activePlanetRadius[0] / Math.max(100, height));
+      return Math.log2(0.01 * this._mapDiv.clientWidth * CosmoScout.state.activePlanetRadius[0] /
+                       Math.max(100, height));
     }
 
     // Update minimap based on observer state.
@@ -264,7 +296,7 @@
           this._observerMarker.setLatLng([lat, lng]);
 
           if (force || this._locked) {
-            this._minimap.setView([lat, lng], [this._minimap.getZoom()]);
+            this._map.setView([lat, lng], [this._map.getZoom()]);
           }
 
           this._lastLng = lng;

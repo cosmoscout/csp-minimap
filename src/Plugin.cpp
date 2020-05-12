@@ -29,26 +29,56 @@ namespace csp::minimap {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void from_json(nlohmann::json const& j, Plugin::Settings::Layer& o) {
+NLOHMANN_JSON_SERIALIZE_ENUM(Plugin::Settings::ProjectionType,
+    {
+        {Plugin::Settings::ProjectionType::eNone, nullptr},
+        {Plugin::Settings::ProjectionType::eMercator, "mercator"},
+        {Plugin::Settings::ProjectionType::eEquirectangular, "equirectangular"},
+    })
+
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    Plugin::Settings::LayerType, {
+                                     {Plugin::Settings::LayerType::eNone, nullptr},
+                                     {Plugin::Settings::LayerType::eWMS, "wms"},
+                                     {Plugin::Settings::LayerType::eWMTS, "wmts"},
+                                 })
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void from_json(nlohmann::json const& j, Plugin::Settings::Map& o) {
+  cs::core::Settings::deserialize(j, "projection", o.mProjection);
+  cs::core::Settings::deserialize(j, "type", o.mType);
   cs::core::Settings::deserialize(j, "url", o.mURL);
-  cs::core::Settings::deserialize(j, "layer", o.mLayer);
-  cs::core::Settings::deserialize(j, "attribution", o.mAttribution);
+  cs::core::Settings::deserialize(j, "config", o.mConfig);
+
+  if (o.mType == Plugin::Settings::LayerType::eNone) {
+    throw cs::core::Settings::DeserializationException(
+        "'type'", "Invalid layer type given! Should be either 'wms' or 'wmts'");
+  }
+
+  if (o.mProjection == Plugin::Settings::ProjectionType::eNone) {
+    throw cs::core::Settings::DeserializationException("'projection'",
+        "Invalid projection type given! Should be either 'mercator' or 'equirectangular'.");
+  }
 }
 
-void to_json(nlohmann::json& j, Plugin::Settings::Layer const& o) {
+void to_json(nlohmann::json& j, Plugin::Settings::Map const& o) {
+  cs::core::Settings::serialize(j, "projection", o.mProjection);
+  cs::core::Settings::serialize(j, "type", o.mType);
   cs::core::Settings::serialize(j, "url", o.mURL);
-  cs::core::Settings::serialize(j, "layer", o.mLayer);
-  cs::core::Settings::serialize(j, "attribution", o.mAttribution);
+  cs::core::Settings::serialize(j, "config", o.mConfig);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void from_json(nlohmann::json const& j, Plugin::Settings& o) {
-  cs::core::Settings::deserialize(j, "targets", o.mTargets);
+  cs::core::Settings::deserialize(j, "defaultMap", o.mDefaultMap);
+  cs::core::Settings::deserialize(j, "maps", o.mMaps);
 }
 
 void to_json(nlohmann::json& j, Plugin::Settings const& o) {
-  cs::core::Settings::serialize(j, "targets", o.mTargets);
+  cs::core::Settings::serialize(j, "defaultMap", o.mDefaultMap);
+  cs::core::Settings::serialize(j, "maps", o.mMaps);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,6 +89,9 @@ void Plugin::init() {
 
   // Call onLoad whenever the settings are reloaded.
   mOnLoadConnection = mAllSettings->onLoad().connect([this]() { onLoad(); });
+
+  // Load initial settings.
+  onLoad();
 
   // Store the current settings on save.
   mOnSaveConnection = mAllSettings->onSave().connect(
@@ -96,21 +129,30 @@ void Plugin::init() {
         mGuiManager->getGui()->callJavascript("CosmoScout.minimap.removeBookmark", bookmarkID);
       });
 
-  // Update bookmarks if active body changes.
+  // Update bookmarks and map layers if active body changes.
   mActiveBodyConnection = mSolarSystem->pActiveBody.connectAndTouch(
       [this](std::shared_ptr<cs::scene::CelestialBody> const& body) {
+        // First remove all bookmarks.
         mGuiManager->getGui()->callJavascript("CosmoScout.minimap.removeBookmarks");
+        mGuiManager->getGui()->callJavascript("CosmoScout.minimap.configure", "");
 
-        // Add all bookmarks with positions for this body.
         if (body) {
+          // Add all layers configured for this body.
+          auto mapSettings = mPluginSettings.mMaps.find(body->getCenterName());
+          if (mapSettings != mPluginSettings.mMaps.end()) {
+            nlohmann::json json = mapSettings->second;
+            mGuiManager->getGui()->callJavascript("CosmoScout.minimap.configure", json.dump());
+          } else if (mPluginSettings.mDefaultMap.has_value()) {
+            nlohmann::json json = mPluginSettings.mDefaultMap.value();
+            mGuiManager->getGui()->callJavascript("CosmoScout.minimap.configure", json.dump());
+          }
+
+          // Add all bookmarks with positions for this body.
           for (auto const& [id, bookmark] : mGuiManager->getBookmarks()) {
             onAddBookmark(body, id, bookmark);
           }
         }
       });
-
-  // Load initial settings.
-  onLoad();
 
   logger().info("Loading done.");
 }
