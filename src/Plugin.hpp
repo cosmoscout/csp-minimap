@@ -16,6 +16,8 @@
 
 namespace csp::minimap {
 
+/// This adds a configurable 2D-Minimap to the user interface. It shows the current observer
+/// position, the bookmarks for the currently active body and allows adding new bookmarks.
 class Plugin : public cs::core::PluginBase {
  public:
   struct Settings {
@@ -23,9 +25,14 @@ class Plugin : public cs::core::PluginBase {
     enum class LayerType { eNone, eWMS, eWMTS };
 
     struct Map {
+      /// Either mercator or equirectangular.
       ProjectionType mProjection;
-      LayerType      mType;
-      std::string    mURL;
+
+      /// Either WMS or WMTS. If WMS, you have to give a "layer" parameter in the config object.
+      LayerType mType;
+
+      /// WMTS template URL or WMS service endpoint, including the '?'.
+      std::string mURL;
 
       /// This is directly passed to Leaflet, the supported options are documented on the page
       /// linked below. Note that if mType is eWMS all additional options will be sent to the WMS
@@ -35,7 +42,11 @@ class Plugin : public cs::core::PluginBase {
       nlohmann::json mConfig;
     };
 
+    /// This maps a minimap configuration to a SPICE center name. The minimap will be configured
+    /// according to the currently active body.
     std::map<std::string, Map> mMaps;
+
+    /// If no configuration is found in the map above, this configuration will be used instead.
     std::optional<Map> mDefaultMap;
   };
 

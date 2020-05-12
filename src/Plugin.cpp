@@ -185,6 +185,7 @@ void Plugin::deInit() {
 void Plugin::onAddBookmark(std::shared_ptr<cs::scene::CelestialBody> const& activeBody,
     uint32_t bookmarkID, cs::core::Settings::Bookmark const& bookmark) {
 
+  // Add only if it has a location and matches the currently active body.
   if (bookmark.mLocation && bookmark.mLocation.value().mPosition) {
     if (activeBody->getCenterName() == bookmark.mLocation.value().mCenter) {
       auto radii = activeBody->getRadii();
@@ -202,7 +203,6 @@ void Plugin::onAddBookmark(std::shared_ptr<cs::scene::CelestialBody> const& acti
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::onLoad() {
-
   // Read settings from JSON.
   from_json(mAllSettings->mPlugins.at("csp-minimap"), mPluginSettings);
 }
