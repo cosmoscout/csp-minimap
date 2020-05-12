@@ -114,6 +114,23 @@
         maxBounds: [[-90, -180], [90, 180]]
       });
 
+      // Bookmarks will be shown in this cluster layer.
+      this._bookmarkLayer = L.markerClusterGroup({
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        animateAddingMarkers: true,
+        maxClusterRadius: 40,
+        iconCreateFunction: (cluster) => {
+          return L.divIcon({
+            className: 'minimap-bookmark-cluster',
+            html: '<div>' + cluster.getChildCount() + '</div>',
+            iconSize: [22, 22],
+            iconAnchor: [11, 25]
+          });
+        }
+      });
+
       // Add our custom buttons.
       this._minimap.addControl(new this._customControls());
 
@@ -131,8 +148,7 @@
       });
 
       this._observerMarker =
-          L.marker(
-               [0, 0], {icon: crossHair, interactive: false, keyboard: false, zIndexOffset: 1000})
+          L.marker([0, 0], {icon: crossHair, interactive: false, keyboard: false, zIndexOffset: -1})
               .addTo(this._minimap);
 
       this._wmslayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -175,18 +191,21 @@
     }
 
     addBookmark(bookmarkID, bookmarkColor, lng, lat) {
-      this._bookmarks[bookmarkID] = L.marker([lat, lng], {
-                                       icon: L.divIcon({
-                                         className: 'minimap-bookmark-icon',
-                                         html: `<div style="border-color: ${bookmarkColor}"></div>`,
-                                         iconSize: [18, 18]
-                                       })
-                                     }).addTo(this._minimap);
+      this._bookmarks[bookmarkID] =
+          L.marker([lat, lng], {
+             icon: L.divIcon({
+               className: 'minimap-bookmark-icon',
+               html: `<div style="background-color: ${bookmarkColor}"></div>`,
+               iconSize: [22, 22],
+               iconAnchor: [11, 26],
+             })
+           }).addTo(this._bookmarkLayer);
 
       L.DomEvent.on(this._bookmarks[bookmarkID], 'mouseover', () => {
         let pos = this._minimap.latLngToContainerPoint(this._bookmarks[bookmarkID].getLatLng());
+        let box = this._minimapDiv.getBoundingClientRect();
         CosmoScout.callbacks.bookmark.showTooltip(
-            bookmarkID, this._minimapDiv.offsetLeft + pos.x, this._minimapDiv.offsetTop + pos.y);
+            bookmarkID, box.x + pos.x + 2, box.y + pos.y - 12);
       });
 
       L.DomEvent.on(this._bookmarks[bookmarkID], 'mouseout', () => {
@@ -197,18 +216,25 @@
         CosmoScout.callbacks.bookmark.gotoLocation(bookmarkID);
         L.DomEvent.stop(e);
       });
+
+      // The markerClusterGroup wants to be added to the map AFTER the first marker has been added.
+      // So we have to do this here...
+      if (!this._bookmarkLayerAdded) {
+        this._minimap.addLayer(this._bookmarkLayer);
+        this._bookmarkLayerAdded = true;
+      }
     }
 
     removeBookmark(bookmarkID) {
       if (bookmarkID in this._bookmarks) {
-        this._bookmarks[bookmarkID].removeFrom(this._minimap);
+        this._bookmarks[bookmarkID].removeFrom(this._bookmarkLayer);
         delete this._bookmarks[bookmarkID];
       }
     }
 
     removeBookmarks() {
       for (let i in this._bookmarks) {
-        this._bookmarks[i].removeFrom(this._minimap);
+        this._bookmarks[i].removeFrom(this._bookmarkLayer);
       }
 
       this._bookmarks = {};

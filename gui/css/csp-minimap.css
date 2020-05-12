@@ -9,15 +9,36 @@
 
 .minimap-bookmark-icon div {
   height: 100%;
-  border-radius: 10px;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  transform: rotate(-45deg);
+}
+
+.minimap-bookmark-icon div::after {
+  content: '';
+  border-radius: 50%;
   background-color: rgba(0, 0, 0, 0.8);
-  border: 2px solid;
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  bottom: 4px;
+  right: 4px;
+}
+
+.minimap-bookmark-cluster div {
+  height: 100%;
+  border-radius: 50%;
+  border: 3px double #ccf;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.8);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-.minimap-bookmark-icon div:hover {
-  background-color: rgba(50, 50, 50, 0.8);
+.minimap-bookmark-cluster:hover div,
+.minimap-bookmark-icon:hover div::after {
+  background-color: #555;
 }
+
 
 /* Leaflet style overrides */
 
@@ -64,4 +85,13 @@
 
 .leaflet-bar a.leaflet-disabled {
   color: rgb(121, 121, 121);
+}
+
+.leaflet-cluster-anim .leaflet-marker-icon,
+.leaflet-cluster-anim .leaflet-marker-shadow {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-in;
+}
+
+.leaflet-cluster-spider-leg {
+  transition: stroke-dashoffset 0.3s ease-out, stroke-opacity 0.3s ease-in;
 }

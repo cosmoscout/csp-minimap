@@ -66,6 +66,8 @@ void Plugin::init() {
 
   // Add resources to gui.
   mGuiManager->addScriptToGuiFromJS("../share/resources/gui/third-party/js/leaflet.js");
+  mGuiManager->addScriptToGuiFromJS(
+      "../share/resources/gui/third-party/js/leaflet.markercluster.js");
   mGuiManager->addCssToGui("third-party/css/leaflet.css");
 
   mGuiManager->addCssToGui("css/csp-minimap.css");
