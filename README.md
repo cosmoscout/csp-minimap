@@ -76,7 +76,7 @@ The given values are just some examples, feel free to add your own maps:
 "type": "wmts",
 "url": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2019_3857/default/g/{z}/{y}/{x}.jpg",
 "config": {
-  "attribution": "Sentinel-2 cloudless - <a href='https://s2maps.eu/'>s2maps.eu</a> by <a href='https://eox.at/'>EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2019)"
+  "attribution": "Sentinel-2 cloudless - <a href='https://s2maps.eu/' target='_blank'>s2maps.eu</a> by <a href='https://eox.at/' target='_blank'>EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2019)"
 }
 ```
 
@@ -86,7 +86,7 @@ The given values are just some examples, feel free to add your own maps:
 "type": "wmts",
 "url": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg",
 "config": {
-  "attribution": "Map tiles from <a href='https://trek.nasa.gov'>trek.nasa.gov</a>"
+  "attribution": "Map tiles from <a href='https://trek.nasa.gov' target='_blank'>trek.nasa.gov</a>"
 }
 ```
 

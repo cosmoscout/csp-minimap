@@ -135,7 +135,7 @@
       this._map.addControl(new this._customControls());
 
       // Add the attribution control to the bottom left.
-      L.control.attribution({position: 'bottomleft'}).addTo(this._map);
+      L.control.attribution({position: 'bottomleft', prefix: false}).addTo(this._map);
 
       // Create a marker for the user's position.
       let crossHair = L.icon({
