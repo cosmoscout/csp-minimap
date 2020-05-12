@@ -18,7 +18,7 @@
     _locked  = true;
 
     _customControls = L.Control.extend({
-      options: {position: 'topleft'},
+      options: {position: 'topright'},
       onAdd:
           () => {
             let createButton = (icon, tooltip, callback) => {
@@ -124,11 +124,10 @@
       let crossHair = L.icon({
         iconUrl: 'img/observer.png',
         shadowUrl: 'img/observer_shadow.png',
-        iconSize: [28, 28],
-        shadowSize: [28, 28],
-        iconAnchor: [14, 14],
-        shadowAnchor: [14, 14],
-        popupAnchor: [14, 30]
+        iconSize: [36, 36],
+        shadowSize: [36, 36],
+        iconAnchor: [18, 18],
+        shadowAnchor: [18, 18]
       });
 
       this._observerMarker =
@@ -175,13 +174,29 @@
       }
     }
 
-    addBookmark(bookmarkID, bookmarkName, bookmarkColor, lng, lat) {
+    addBookmark(bookmarkID, bookmarkColor, lng, lat) {
       this._bookmarks[bookmarkID] = L.marker([lat, lng], {
                                        icon: L.divIcon({
                                          className: 'minimap-bookmark-icon',
-                                         html: `<div style="border-color: ${bookmarkColor}"></div>`
+                                         html: `<div style="border-color: ${bookmarkColor}"></div>`,
+                                         iconSize: [18, 18]
                                        })
                                      }).addTo(this._minimap);
+
+      L.DomEvent.on(this._bookmarks[bookmarkID], 'mouseover', () => {
+        let pos = this._minimap.latLngToContainerPoint(this._bookmarks[bookmarkID].getLatLng());
+        CosmoScout.callbacks.bookmark.showTooltip(
+            bookmarkID, this._minimapDiv.offsetLeft + pos.x, this._minimapDiv.offsetTop + pos.y);
+      });
+
+      L.DomEvent.on(this._bookmarks[bookmarkID], 'mouseout', () => {
+        CosmoScout.callbacks.bookmark.hideTooltip();
+      });
+
+      L.DomEvent.on(this._bookmarks[bookmarkID], 'click', (e) => {
+        CosmoScout.callbacks.bookmark.gotoLocation(bookmarkID);
+        L.DomEvent.stop(e);
+      });
     }
 
     removeBookmark(bookmarkID) {
