@@ -78,6 +78,10 @@
   line-height: 24px !important;
 }
 
+.leaflet-bar a:not(.leaflet-disabled) {
+  cursor: pointer;
+}
+
 .leaflet-bar a:not(.leaflet-disabled):hover {
   color: #fff;
   background-color: rgba(230, 230, 255, 0.3);
