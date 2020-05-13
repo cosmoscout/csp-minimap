@@ -2,7 +2,7 @@
 
 (() => {
   /**
-   * FlyTo Api
+   * Minimap Api
    */
   class MinimapApi extends IApi {
     /**

@@ -20,7 +20,7 @@ EXPORT_FN cs::core::PluginBase* create() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EXPORT_FN void destroy(cs::core::PluginBase* pluginBase) {
-  delete pluginBase;
+  delete pluginBase; // NOLINT(cppcoreguidelines-owning-memory)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,19 +29,23 @@ namespace csp::minimap {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-NLOHMANN_JSON_SERIALIZE_ENUM(Plugin::Settings::ProjectionType,
-    {
-        {Plugin::Settings::ProjectionType::eNone, nullptr},
-        {Plugin::Settings::ProjectionType::eMercator, "mercator"},
-        {Plugin::Settings::ProjectionType::eEquirectangular, "equirectangular"},
-    })
+// clang-format off
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    Plugin::Settings::LayerType, {
-                                     {Plugin::Settings::LayerType::eNone, nullptr},
-                                     {Plugin::Settings::LayerType::eWMS, "wms"},
-                                     {Plugin::Settings::LayerType::eWMTS, "wmts"},
-                                 })
+// NOLINTNEXTLINE
+NLOHMANN_JSON_SERIALIZE_ENUM(Plugin::Settings::ProjectionType, {
+    {Plugin::Settings::ProjectionType::eNone, nullptr},
+    {Plugin::Settings::ProjectionType::eMercator, "mercator"},
+    {Plugin::Settings::ProjectionType::eEquirectangular, "equirectangular"},
+});
+
+// NOLINTNEXTLINE
+NLOHMANN_JSON_SERIALIZE_ENUM(Plugin::Settings::LayerType, {
+   {Plugin::Settings::LayerType::eNone, nullptr},
+   {Plugin::Settings::LayerType::eWMS, "wms"},
+   {Plugin::Settings::LayerType::eWMTS, "wmts"},
+});
+
+// clang-format on
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
